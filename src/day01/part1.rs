@@ -1,7 +1,7 @@
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let input = include_str!("input");
+    let input = include_str!("input.part1");
     let mut result = 0;
     for line in input.lines() {
         let mut number = String::new();
