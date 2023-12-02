@@ -1,2 +1,3 @@
 /target
-input.*
+/src/*/input.*
+/src/*/input

@@ -19,7 +19,7 @@ fn build_digits() -> HashMap<String, u8> {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let input = include_str!("input.part2");
+    let input = include_str!("input");
     let mut result: u32 = 0;
     let digits = build_digits();
     for line in input.lines() {
