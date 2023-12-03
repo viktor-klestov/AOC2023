@@ -1,88 +1,60 @@
-use std::cmp::{max, min};
 use std::error::Error;
 
 fn main() {
-    let result = solve(include_str!("input.example")).unwrap();
+    let result = solve(include_str!("input")).unwrap();
     println!("{result}");
 }
 
-fn solve(input: &str) -> Result<i32, Box<dyn Error>> {
+fn solve(input: &str) -> Result<u32, Box<dyn Error>> {
     let mut result = 0;
-    let mut mtx: Vec<Vec<char>> = input.lines().map(|line| line.chars().collect()).collect();
-    let mut i = 0;
-    for line in input.lines() {
+    let mtx: Vec<Vec<char>> = input.lines().map(|line| line.chars().collect()).collect();
+    for i in 0..mtx.len() {
+        let mut buffer = String::new();
+        let mut has_adjacent_symbol = false;
         for j in 0..mtx[i].len() {
-            match explore(&mut mtx, (i, j)) {
-                ExplorationResult::NumberPart(range, has_adjacent_symbol) => {
-                    if has_adjacent_symbol {
-                        let number = &line[range.0..range.1 + 1];
-                        println!("{:?}", mtx);
-                        println!("{number}");
-                        result += number.parse::<i32>()?;
-                    }
-                }
-                _ => (),
+            let symbol = mtx[i][j];
+            if symbol.is_digit(10) {
+                has_adjacent_symbol |= has_adjacent_symbol_above_or_below(&mtx, j, i);
+                buffer.push(symbol);
+            } else {
+                flush(
+                    has_adjacent_symbol || symbol != '.',
+                    &mut buffer,
+                    &mut result,
+                );
+                has_adjacent_symbol = symbol != '.';
             }
         }
-        i += 1;
+        flush(has_adjacent_symbol, &mut buffer, &mut result);
     }
     Ok(result)
 }
 
-fn explore(schema: &mut Vec<Vec<char>>, coorinates: (usize, usize)) -> ExplorationResult {
-    println!("{:?}", coorinates);
-    let symbol = schema[coorinates.0][coorinates.1];
-    if symbol == '.' {
-        return ExplorationResult::Empty;
-    }
-    if !symbol.is_digit(10) {
-        return ExplorationResult::Symbol;
-    }
-    schema[coorinates.0][coorinates.1] = '$';
-    let mut range = (coorinates.1, coorinates.1);
-    let mut has_adjacent_symbol = false;
+fn has_adjacent_symbol_above_or_below(mtx: &Vec<Vec<char>>, x: usize, y: usize) -> bool {
     let dxs = [-1, 0, 1];
-    let dys = dxs;
+    let dys = [-1, 1];
+    let mut has = false;
     for dx in dxs {
         for dy in dys {
-            let new_coordinates = (coorinates.0 as i32 + dy, coorinates.1 as i32 + dx);
-            let mut invalid = dx <= 0 && dy == 0;
-            invalid |= new_coordinates.0 < 0 || new_coordinates.1 < 0;
-            if invalid {
+            let xx = x as i32 + dx;
+            let yy = y as i32 + dy;
+            if xx < 0 || yy < 0 {
                 continue;
             }
-            let new_coordinates = (new_coordinates.0 as usize, new_coordinates.1 as usize);
-            if schema.len() <= new_coordinates.0
-                || schema[new_coordinates.0].len() <= new_coordinates.1
-            {
+            let xx = xx as usize;
+            let yy = yy as usize;
+            if yy >= mtx.len() || xx >= mtx[0].len() {
                 continue;
             }
-            let subresult = explore(schema, new_coordinates);
-            println!("{:?} {:?}", new_coordinates, subresult);
-            if dy == 0 {
-                match subresult {
-                    ExplorationResult::NumberPart(subrange, has_transitional_adjacent_symbol) => {
-                        range.0 = min(range.0, subrange.0);
-                        range.1 = max(range.1, subrange.1);
-                        has_adjacent_symbol |= has_transitional_adjacent_symbol;
-                    }
-                    _ => (),
-                }
-            }
-            match subresult {
-                ExplorationResult::Symbol => {
-                    has_adjacent_symbol = true;
-                }
-                _ => (),
-            }
+            has |= mtx[yy][xx] != '.';
         }
     }
-    ExplorationResult::NumberPart(range, has_adjacent_symbol)
+    has
 }
 
-#[derive(Debug)]
-enum ExplorationResult {
-    Empty,
-    Symbol,
-    NumberPart((usize, usize), bool),
+fn flush(has_adjacent_symbol: bool, buffer: &mut String, result: &mut u32) {
+    if has_adjacent_symbol && !buffer.is_empty() {
+        *result += buffer.parse::<u32>().unwrap();
+    }
+    buffer.clear();
 }
